@@ -1,15 +1,13 @@
-#include <QtDebug>
 #include <iostream>
 #include <ctime>
+#include <random>
 
-#include "random.h"
-#include "squareisinglattice.h"
-
+#include "MagneticSystem.h"
 #include "wlNew.h"
-#include "wanglandau.h"
+#include "misc.h"
+#include "debug_msg.h"
 
 using namespace std;
-
 
 #define MEASURE(x,y,n) { \
     unsigned start_time =  clock(); \
@@ -20,31 +18,37 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
+    // Примеры использования отладочных макросов
+    DBG() << "Программа запущена, argc = " << argc;
 
-    SquareIsingLattice sys;
-    const unsigned n=20;
-    sys.dropSquareLattice(n,n);
-    sys.setMinstate(sys.groundState());
-    sys.setMaxstate(sys.maximalState());
+    for (int i = 0; i < argc; ++i) {
+        DBG() << "argv[" << i << "] = " << argv[i];
+    }
 
+    // MagneticSystem sys("apamea_2_2.mfsys", 5.0, Vect{8,8,0});
+    MagneticSystem sys("apamea_4_4.mfsys", 5.0, Vect{16,16,0});
+    const unsigned intervals = 100;
 
-    WangLandau wl2(&sys, n*n*4, 0.8, 1.01);
-    wl2.showMessages=true;
-    wl2.saveEach = 100000;
-    MEASURE(wl2.run(100000),"WL old",1);
+    DBG() << "Система создана, intervals = " << intervals;
 
-    WLNew wl(&sys, n*n*4, 0.8, 1.01);
+    WLNew wl(&sys, 10000, 42, 0.75, 1.00001);
     wl.showMessages=true;
-    wl.saveEach = 100000;
-    wl.gaps.setUniform(10, n*n*4, 0.2);
+    wl.saveEach = 1e6;
+    wl.gaps.setUniform(10, intervals, 0.2);
     cout<<wl.gaps.toWolframString()<<endl;
+
+    DBG_F("Запуск WL с параметрами: flatness=%f, gamma=%f", 0.75, 1.01);
+
     MEASURE(wl.run(100000),"WL new",1)
 
     //wl.runWithSave(10000,10000);
     wl.saveG("g.dat");
 
+    DBG() << "Сохранено в g.dat";
 
-    qInfo()<<"finish";
+    DBG_W() << "Работа завершена, результат сохранён";
+
+    cout<<"finish";
 
     return 0;
 }
