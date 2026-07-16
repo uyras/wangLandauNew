@@ -56,5 +56,7 @@ string Dos2<T_x,T_val>::toString()
 
 template class Dos2<int,unsigned>;
 template class Dos2<int,double>;
+template class Dos2<int,char>;
 template class Dos2<double,double>;
 template class Dos2<double,unsigned>;
+template class Dos2<double,char>;

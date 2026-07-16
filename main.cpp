@@ -33,7 +33,8 @@ int main(int argc, char *argv[])
 
     WLNew wl(&sys, 10000, 42, 0.75, 1.00001);
     wl.showMessages=true;
-    wl.saveEach = 1e6;
+    wl.saveEach = 1e7;
+    wl.fullRecalculateEEvery = 1e7;
     wl.gaps.setUniform(10, intervals, 0.2);
     cout<<wl.gaps.toWolframString()<<endl;
 

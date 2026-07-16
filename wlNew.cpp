@@ -3,6 +3,7 @@
 WLNew::WLNew(MagneticSystem *sys, unsigned intervals, int seed, double accuracy, double fmin):
     showMessages(false),
     saveEach(0),
+    fullRecalculateEEvery(0),
     sys(sys),
     intervals(intervals),
     accuracy(accuracy),
@@ -17,6 +18,7 @@ WLNew::WLNew(MagneticSystem *sys, unsigned intervals, int seed, double accuracy,
     double EAbs = sys->EAbs();
     h.resize(-EAbs, EAbs, intervals);
     g.resize(-EAbs, EAbs, intervals);
+    visited.resize(-EAbs, EAbs, intervals);
 }
 
 WLNew::~WLNew()
@@ -33,8 +35,7 @@ void WLNew::run(unsigned steps)
     vector<state_t> states;
     cout<<gaps.Gaps()<<endl;
     states.resize(gaps.Gaps());
-    double eTemp,dE; 
-    eTemp = this->fullRefreshEnergy();
+    double dE; 
     bool revert=false;
     // for (unsigned gapNumber=0; gapNumber<gaps.Gaps(); gapNumber++){
     //     unsigned long int i=0;
@@ -67,13 +68,19 @@ void WLNew::run(unsigned steps)
 
     const state_t initState = this->state;
     this->f = 1;
-    long unsigned accepted=0, rejected=0, totalSteps=0;
+    accepted = 0; 
+    rejected = 0; 
+    totalSteps = 0;
+    lastReset = 0;
+    this->hCount = 0;
     this->resetH();
 
     msg("steps=",steps);
 
-    double eOld = this->fullRefreshEnergy();
-    updateGH(eOld);
+    currentE = this->fullRefreshEnergy();
+    this->minState = this->state;
+    this->minE = currentE;
+    updateGH(currentE);
 
     while (f>fMin){
         //повторяем алгоритм сколько-то шагов
@@ -81,15 +88,15 @@ void WLNew::run(unsigned steps)
             int partNum = intDistr(generator);
 
             dE = this->getdE(partNum);
-            if (doubleDistr(generator) <= exp(g[eOld]-g[eOld+dE])) {
-                eOld += dE;
+            if (doubleDistr(generator) <= exp(g[currentE]-g[currentE+dE])) {
+                currentE += dE;
                 state[partNum] *= -1;
                 ++accepted;
             } else {
                 ++rejected;
             }
 
-            updateGH(eOld);
+            updateGH(currentE);
             ++totalSteps;
 
             if (saveEach && totalSteps%saveEach==0){
@@ -101,6 +108,15 @@ void WLNew::run(unsigned steps)
                 fn.clear();
                 fn<<"h_"<<totalSteps<<".dat";
                 saveH(fn.str());
+            }
+
+            if (fullRecalculateEEvery && totalSteps && totalSteps%fullRecalculateEEvery==0){
+                currentE = this->fullRefreshEnergy();
+            }
+
+            if (currentE < this->minE){
+                this->minState = this->state;
+                this->minE = currentE;
             }
         }
 
@@ -198,10 +214,15 @@ bool WLNew::isFlat()
 {
     if (average == 0.0) return false;
     for (size_t i=0; i<h.Intervals(); i++){//плоскость гистограммы только в своем интервале
-        if (h.at(i)!=0 && h.at(i) < average * accuracy) {          // односторонний критерий
+        if (visited.at(i) && h.at(i) < average * accuracy) {          // односторонний критерий
             DBG_RL() << "not flat at bin " << i << " (" << h.at(i)
                      << "), average=" << average
                      << ", accuracy*average=" << (accuracy * average);
+
+            if (h.at(i) < average *  (1. - accuracy)){ // если значение меньше допустимой погрешности от среднего
+                this->resetState();
+            }
+
             return false;
         }
     }
@@ -236,7 +257,7 @@ double WLNew::dispersion2(unsigned gapNumber)
 
 void WLNew::updateGH(double E)
 {
-    if (h[E]==0){ 
+    if (!visited[E]){ 
         //случай если изменилось число ненулевых элементов
         hCount++;
         average = (average * (hCount-1)) / hCount;
@@ -245,6 +266,7 @@ void WLNew::updateGH(double E)
     g[E]+=f;
     //прибавляем h и одновременно считаем среднее значение
     h[E]+=1; 
+    visited[E] = true;
     average += (1./(double)hCount);
 }
 
@@ -254,7 +276,6 @@ void WLNew::resetH()
         h.at(i)=0;
     }
     average=0.0;
-    hCount=0;
 }
 
 void WLNew::normalizeG()
@@ -262,5 +283,15 @@ void WLNew::normalizeG()
     const double gFirst=g.at(0);
     for (size_t i=0; i<g.Intervals(); i++){
         g.at(i)-=gFirst;
+    }
+}
+
+void WLNew::resetState()
+{
+    if (!this->lastReset || this->totalSteps - this->lastReset > 1e7){
+        DBG_W()<<"Force Jump to Ground State from "<<this->currentE<<" to "<<this->minE;
+        this->state = this->minState;
+        this->currentE = this->fullRefreshEnergy();
+        this->lastReset = this->totalSteps;
     }
 }

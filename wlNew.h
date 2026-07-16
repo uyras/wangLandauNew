@@ -45,12 +45,18 @@ public:
 
     Dos2<double,double> g;//g - логарифм плотности состояний (энтропия), h - вспомогательная гистограмма, которая должна быть плоской
     Dos2<double,unsigned> h;
+    Dos2<double,char> visited; //список столбцов, которые посетили хотя бы один раз
 
     bool showMessages;
     unsigned saveEach; ///каждые сколько шагов сохранять данные в файл. если 0 то не сохранять.
+    unsigned fullRecalculateEEvery; // каждые сколько шагов делать полный пересчет энергии
 
     GapManager gaps;
     Vect field = {0,0,0};
+
+    unsigned long accepted;
+    unsigned long rejected;
+    unsigned long totalSteps;
 private:
     MagneticSystem *sys;
     unsigned int intervals; //число интервалов в плотности состояний
@@ -70,6 +76,7 @@ private:
     void updateGH(double E);
     void resetH();
     void normalizeG();
+    void resetState();
 
     template<typename... Args>
     inline void msg(const Args&... args) {
@@ -80,6 +87,10 @@ private:
 
     default_random_engine generator;
     state_t state;
+    state_t minState;
+    double minE;
+    double currentE;
+    unsigned long lastReset;
 };
 
 #endif // WLNEW_H

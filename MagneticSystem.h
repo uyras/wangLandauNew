@@ -23,6 +23,7 @@ private:
     optional<hamiltonian_t> _hamiltonian;
     state_t _state; //текущее состояние системы, для которого расчитана матрица энергий
     optional<double> _E; //кэшированная энергия чтобы не пересчитывать постоянно
+    optional<double> _EAbs; //кэшированная энергия по модулю чтобы не пересчитывать постоянно
 
 
     void load_csv();
@@ -46,8 +47,18 @@ public:
     size_t N() const { return _state.size(); }
 
     double E() { return (_E) ? (*_E) : (_E = accumulate(eMatrix.begin(), eMatrix.end(), 0.0 ) / 2.0).value(); }
-    double EAbs() { return accumulate(eMatrix.begin(), eMatrix.end(), 0.0, 
-        [](double acc, double x) { return acc + abs(x); } ) / 2.0; }
+    double EAbs() { 
+        return (_EAbs) ? 
+            (*_EAbs) : 
+            (
+                _EAbs = accumulate(
+                    eMatrix.begin(), 
+                    eMatrix.end(), 
+                    0.0, 
+                    [](double acc, double x) { return acc + abs(x); } 
+                ) / 2.0
+            ).value(); 
+    }
 
     int getFileVersion(){ return _fileVersion; }
     optional<Vect> getPBCSize(){ return this->_size; }
