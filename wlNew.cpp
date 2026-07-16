@@ -31,12 +31,12 @@ void WLNew::run(unsigned steps)
     uniform_int_distribution<int> intDistr(0, sys->N() - 1); // including right edge
     uniform_real_distribution<double> doubleDistr(0, 1);	   // right edge is not included
 
-    //ищем состояния, входящие в гапы
-    vector<state_t> states;
-    cout<<gaps.Gaps()<<endl;
-    states.resize(gaps.Gaps());
+    
     double dE; 
     bool revert=false;
+    //ищем состояния, входящие в гапы
+    // vector<state_t> states;
+    // states.resize(gaps.Gaps());
     // for (unsigned gapNumber=0; gapNumber<gaps.Gaps(); gapNumber++){
     //     unsigned long int i=0;
     //     while (!gaps.inRange(g.num(eTemp),gapNumber)){

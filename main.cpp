@@ -25,20 +25,20 @@ int main(int argc, char *argv[])
         DBG() << "argv[" << i << "] = " << argv[i];
     }
 
-    // MagneticSystem sys("apamea_2_2.mfsys", 5.0, Vect{8,8,0});
-    MagneticSystem sys("apamea_4_4.mfsys", 5.0, Vect{16,16,0});
-    const unsigned intervals = 100;
+    MagneticSystem sys("apamea_2_2.mfsys", 5.0, Vect{8,8,0});
+    // MagneticSystem sys("apamea_4_4.mfsys", 5.0, Vect{16,16,0});
+    const unsigned intervals = 10000;
 
     DBG() << "Система создана, intervals = " << intervals;
 
-    WLNew wl(&sys, 10000, 42, 0.75, 1.00001);
+    WLNew wl(&sys, intervals, 42, 0.75, 1.00001);
     wl.showMessages=true;
     wl.saveEach = 1e7;
     wl.fullRecalculateEEvery = 1e7;
-    wl.gaps.setUniform(10, intervals, 0.2);
-    cout<<wl.gaps.toWolframString()<<endl;
+    // wl.gaps.setUniform(10, intervals, 0.2);
+    // cout<<wl.gaps.toWolframString()<<endl;
 
-    DBG_F("Запуск WL с параметрами: flatness=%f, gamma=%f", 0.75, 1.01);
+    // DBG_F("Запуск WL с параметрами: flatness=%f", 0.75);
 
     MEASURE(wl.run(100000),"WL new",1)
 
